@@ -1,0 +1,169 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+    echo 'Uh-oh...Something went wrong. Recived an invalid option'
+    echo 'Usage: build_dependencies [OPTION]'
+    echo "OPTIONS:"
+    echo "   armv7l - (Linaro gnueabihf)"
+    echo
+    echo "   clean (clean the build environment)"
+    echo 'Example: ./build_dependencies armv7'
+    echo
+    exit 1
+elif [ $1 == "clean" ]; then   
+    clear
+    echo "#############################"
+    echo "#  Cleaning previous Build  #"
+    echo "#############################"
+    sleep 2
+    rm -Rfv ./code
+    rm -Rfv ./output
+    rm -Rfv ./toolchain
+    . ./config/uncrosscompile.sh
+    export -n CWD
+    exit 1
+else
+    BUILD=$1
+fi
+
+### Set build location
+export CWD=$PWD
+
+clear
+echo "################################"
+echo "#  Creating build environment  #"
+echo "################################"
+sleep 2
+
+### Setup Dirs
+mkdir -p code
+mkdir -p dl
+mkdir -p output
+mkdir -p output/lib
+mkdir -p output/lib/multiarch
+mkdir -p toolchain
+
+### Configure ARCH
+. config/$BUILD
+
+### Build cross compile environment
+. build/python
+
+
+if [ ! -f $CWD/code/.Cheetah ]; then
+clear
+cd $CWD
+echo "######################"
+echo "#  Building Cheetah  #"
+echo "######################"
+sleep 2
+if [ ! -f $CWD/code/.Python-host ]; then
+. build/python
+fi
+. build/cheetah
+cp -avr $CWD/code/Cheetah-2.4.4/build/lib.linux-armv7l-2.7/Cheetah $CWD/output/lib/
+mv -vf $CWD/output/lib/Cheetah/_namemapper.so $CWD/output/lib/multiarch/_namemapper.so.$BUILD
+fi
+
+
+if [ ! -f $CWD/code/.lxml ]; then
+clear
+cd $CWD
+echo "###################"
+echo "#  Building lxml  #"
+echo "###################"
+sleep 2
+if [ ! -f $CWD/code/.Python-host ]; then
+. build/python
+fi
+. build/lxml
+cp -avr $CWD/code/lxml-3.2.3/build/lib.linux-armv7l-2.7/lxml $CWD/output/lib/
+mv -vf $CWD/output/lib/lxml/etree.so $CWD/output/lib/multiarch/etree.so.$BUILD
+mv -vf $CWD/output/lib/lxml/objectify.so $CWD/output/lib/multiarch/objectify.so.$BUILD
+fi
+
+
+if [ ! -f $CWD/code/.OpenSSL ]; then
+clear
+cd $CWD
+echo "######################"
+echo "#  Building OpenSSL  #"
+echo "######################"
+sleep 2
+if [ ! -f $CWD/code/.Python-host ]; then
+. build/python
+fi
+. build/OpenSSL
+cp -avr $CWD/code/pyOpenSSL-0.13/build/lib.linux-armv7l-2.7/OpenSSL $CWD/output/lib/
+mv -vf $CWD/output/lib/OpenSSL/crypto.so $CWD/output/lib/multiarch/crypto.so.$BUILD
+mv -vf $CWD/output/lib/OpenSSL/rand.so $CWD/output/lib/multiarch/rand.so.$BUILD
+mv -vf $CWD/output/lib/OpenSSL/SSL.so $CWD/output/lib/multiarch/SSL.so.$BUILD
+fi
+
+
+if [ ! -f $CWD/code/.yEnc ]; then
+clear
+cd $CWD
+echo "###################"
+echo "#  Building yEnc  #"
+echo "###################"
+sleep 2
+if [ ! -f $CWD/code/.Python-host ]; then
+. build/python
+fi
+. build/yEnc
+cp -avr $CWD/code/yenc-0.4.0/build/lib.linux-armv7l-2.7/yenc.py $CWD/output/lib/
+cp -avr $CWD/code/yenc-0.4.0/build/lib.linux-armv7l-2.7/_yenc.so $CWD/output/lib/multiarch/_yenc.so.$BUILD
+fi
+
+
+if [ ! -f $CWD/code/.par2cmdline ]; then
+clear
+cd $CWD
+echo "###################"
+echo "#  Building par2  #"
+echo "###################"
+sleep 2
+. build/par2
+cp -avr $CWD/output/par2/bin/par2 $CWD/output/lib/multiarch/par2.$BUILD
+fi
+
+
+if [ ! -f $CWD/code/.unrar ]; then
+clear
+cd $CWD
+echo "####################"
+echo "#  Building unrar  #"
+echo "####################"
+sleep 2
+. build/unrar
+cp -avr $CWD/output/unrar/bin/unrar $CWD/output/lib/multiarch/unrar.$BUILD
+fi
+
+
+clear
+cd $CWD
+echo "#####################################################"
+echo "#  Installing to 'script.module.audo-dependencies'  #"
+echo "#####################################################"
+sleep 2
+mkdir -p output/script.module.audo-dependencies
+cp -avr $CWD/output/lib $CWD/output/script.module.audo-dependencies/
+if [ ! -f $CWD/code/.Python-host ]; then
+. build/python
+fi
+if [ ! -f $CWD/code/.overlay ]; then
+. build/overlay
+cp -avr $CWD/code/overlay/* $CWD/output/script.module.audo-dependencies/
+fi
+
+
+cd $CWD
+echo
+. $CWD/config/uncrosscompile.sh
+sleep 2
+echo
+echo "####################"
+echo "+++   FINISHED   +++"
+echo "####################"
+sleep 3

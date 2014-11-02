@@ -1,0 +1,22 @@
+#!/bin/sh
+
+cd $CWD/code
+
+mkdir -p $CWD/code/overlay
+mkdir -p $CWD/code/overlay/lib
+touch $CWD/code/overlay/lib/__init__.py
+
+if [ ! -f $CWD/code/.configobj ]; then
+echo ">>>   Get ConfigObj"
+sleep 3
+if [ ! -f $CWD/dl/configobj-4.7.2.zip ]; then
+    wget -O $CWD/dl/configobj-4.7.2.zip www.voidspace.org.uk/downloads/configobj-4.7.2.zip
+fi
+unzip -o $CWD/dl/configobj-4.7.2.zip -d $CWD/code/configobj
+cp -avr $CWD/code/configobj/configobj-4.7.2/configobj.py $CWD/code/overlay/lib/
+touch $CWD/code/.configobj
+fi
+
+
+touch $CWD/code/.overlay
+cd $CWD

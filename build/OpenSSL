@@ -1,0 +1,91 @@
+#!/bin/sh
+
+cd $CWD/code
+
+export DEST=$OUTPUTDIR/python2
+export CFLAGS="$CFLAGS -Os -fPIC -ffunction-sections -fdata-sections"
+export LDFLAGS="$LDFLAGS -Wl,--gc-sections"
+
+if [ ! -f $CWD/code/.zlib-1.2.8 ]; then
+echo ">>>   MAKE zlib"
+sleep 3
+if [ ! -f $CWD/dl/zlib-1.2.8.tar.gz ]; then
+    wget -O $CWD/dl/zlib-1.2.8.tar.gz http://zlib.net/zlib-1.2.8.tar.gz
+fi
+tar zxf $CWD/dl/zlib-1.2.8.tar.gz
+cd zlib-1.2.8/
+./configure --prefix=$DEST --static
+make clean && make
+ZLIB=`pwd`
+cd ..
+touch $CWD/code/.zlib-1.2.8
+fi
+
+if [ ! -f $CWD/code/.openssl-1.0.1e ]; then
+echo ">>>   MAKE openssl"
+sleep 3
+if [ ! -f $CWD/dl/openssl-1.0.1e.tar.gz ]; then
+    wget -O $CWD/dl/openssl-1.0.1e.tar.gz http://www.openssl.org/source/openssl-1.0.1e.tar.gz
+fi
+tar zxf $CWD/dl/openssl-1.0.1e.tar.gz
+cd openssl-1.0.1e/
+./Configure --prefix=$DEST --openssldir=$DEST/etc/ssl --with-zlib-include=$ZLIB --with-zlib-lib=$ZLIB no-shared no-zlib-dynamic threads linux-armv4 -DL_ENDIAN $CFLAGS $LDFLAGS
+make -j1 clean && make -j1
+OPENSSL=`pwd`
+cd ..
+touch $CWD/code/.openssl-1.0.1e
+fi
+
+if [ ! -f $CWD/code/.setuptools ]; then
+echo ">>>   Get setuptools"
+sleep 3
+if [ ! -f $CWD/dl/setuptools-1.1.tar.gz ]; then
+    wget -O $CWD/dl/setuptools-1.1.tar.gz https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.tar.gz
+fi
+tar zxf $CWD/dl/setuptools-1.1.tar.gz 
+touch $CWD/code/.setuptools
+fi
+
+if [ ! -f $CWD/code/.lib.linux2-arm-2.7 ]; then
+echo ">>>   Link to Python Build environment"
+sleep 3
+pushd $CWD/code/Python-2.7.5/build
+mv lib.linux2-arm-2.7 lib.linux2-arm-2.7.orig
+ln -s ../../Python-2.7.5-native/build/lib.linux-i686-2.7 lib.linux2-arm-2.7
+popd
+touch $CWD/code/.lib.linux2-arm-2.7
+fi
+
+if [ ! -f $CWD/code/.OpenSSL ]; then
+echo ">>>   MAKE pyOpenSSL"
+sleep 3
+if [ ! -f $CWD/dl/pyOpenSSL-0.13.tar.gz ]; then
+    wget -O $CWD/dl/pyOpenSSL-0.13.tar.gz http://pypi.python.org/packages/source/p/pyOpenSSL/pyOpenSSL-0.13.tar.gz
+fi
+tar zxf $CWD/dl/pyOpenSSL-0.13.tar.gz 
+cd pyOpenSSL-0.13/
+export LDSHARED="$CC -pthread -shared"
+export _PYTHON_HOST_PLATFORM="linux-armv7l"
+sed -i -e "s|from distutils.core import Extension, setup|from setuptools import setup\nfrom distutils.core import Extension|g" setup.py
+PYTHONPATH=../setuptools-1.1 ../Python-2.7.5/hostpython setup.py build_ext -I$OPENSSL/include -L$OPENSSL
+$STRIP build/lib.linux-armv7l-2.7/OpenSSL/*.so
+PYTHONPATH=../setuptools-1.1 ../Python-2.7.5/hostpython setup.py bdist_egg
+touch $CWD/code/.OpenSSL
+fi
+
+if [ -f $CWD/code/.lib.linux2-arm-2.7 ]; then
+echo ">>>   Unlink Python Build environment"
+sleep 3
+pushd $CWD/code/Python-2.7.5/build
+rm lib.linux2-arm-2.7
+mv lib.linux2-arm-2.7.orig lib.linux2-arm-2.7
+popd
+rm $CWD/code/.lib.linux2-arm-2.7
+fi
+
+cd $CWD
+echo
+echo "##################################"
+echo "+++   OpenSSL build complete   +++"
+echo "##################################"
+sleep 3

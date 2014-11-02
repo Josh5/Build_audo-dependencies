@@ -1,0 +1,59 @@
+#!/bin/sh
+
+cd $CWD/code
+
+export DEST=$OUTPUTDIR/python2
+export CFLAGS="$CFLAGS -Os -fPIC -ffunction-sections -fdata-sections"
+export LDFLAGS="$LDFLAGS -Wl,--gc-sections"
+
+if [ ! -f $CWD/code/.setuptools ]; then
+echo ">>>   Get setuptools"
+sleep 3
+if [ ! -f $CWD/dl/setuptools-1.1.tar.gz ]; then
+    wget -O $CWD/dl/setuptools-1.1.tar.gz https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.tar.gz
+fi
+tar zxf $CWD/dl/setuptools-1.1.tar.gz 
+touch $CWD/code/.setuptools
+fi
+
+if [ ! -f $CWD/code/.lib.linux2-arm-2.7 ]; then
+echo ">>>   Link to Python Build environment"
+sleep 3
+pushd $CWD/code/Python-2.7.5/build
+mv lib.linux2-arm-2.7 lib.linux2-arm-2.7.orig
+ln -s ../../Python-2.7.5-native/build/lib.linux-i686-2.7 lib.linux2-arm-2.7
+popd
+touch $CWD/code/.lib.linux2-arm-2.7
+fi
+
+if [ ! -f $CWD/code/.yEnc ]; then
+echo ">>>   MAKE yEnc"
+sleep 3
+if [ ! -f $CWD/dl/yenc-0.4.0.tar.gz ]; then
+    wget -O $CWD/dl/yenc-0.4.0.tar.gz http://www.golug.it/pub/yenc/yenc-0.4.0.tar.gz
+fi
+tar zxf $CWD/dl/yenc-0.4.0.tar.gz
+cd yenc-0.4.0/
+export LDSHARED="$CC -pthread -shared"
+export _PYTHON_HOST_PLATFORM="linux-armv7l"
+sed -i -e "s|from distutils.core import setup, Extension|from setuptools import setup\nfrom distutils.core import Extension|g" setup.py
+PYTHONPATH=../setuptools-1.1 ../Python-2.7.5/hostpython setup.py bdist_egg
+touch $CWD/code/.yEnc
+fi
+
+if [ -f $CWD/code/.lib.linux2-arm-2.7 ]; then
+echo ">>>   Unlink Python Build environment"
+sleep 3
+pushd $CWD/code/Python-2.7.5/build
+rm lib.linux2-arm-2.7
+mv lib.linux2-arm-2.7.orig lib.linux2-arm-2.7
+popd
+rm $CWD/code/.lib.linux2-arm-2.7
+fi
+
+cd $CWD
+echo
+echo "###############################"
+echo "+++   yEnc build complete   +++"
+echo "###############################"
+sleep 3

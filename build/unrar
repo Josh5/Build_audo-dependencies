@@ -1,0 +1,20 @@
+#!/bin/sh
+
+cd $CWD/code
+
+export DEST=$OUTPUTDIR/unrar
+
+if [ ! -f $CWD/code/.unrar ]; then
+echo ">>>   MAKE unrar"
+sleep 3
+if [ ! -f $CWD/dl/unrarsrc-5.0.12.tar.gz ]; then
+    wget -O $CWD/dl/unrarsrc-5.0.12.tar.gz http://www.rarlab.com/rar/unrarsrc-5.0.12.tar.gz
+fi
+tar zxf $CWD/dl/unrarsrc-5.0.12.tar.gz
+cd unrar/
+mv makefile Makefile
+make clean
+make CXX=$CXX CXXFLAGS="$CFLAGS -Os -fPIC -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" STRIP=$STRIP LDFLAGS="-pthread"
+make install DESTDIR=$DEST
+touch $CWD/code/.unrar
+fi

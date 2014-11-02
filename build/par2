@@ -1,0 +1,22 @@
+#!/bin/sh
+
+cd $CWD/code
+
+export DEST=$OUTPUTDIR/par2
+
+if [ ! -f $CWD/code/.par2cmdline ]; then
+echo ">>>   MAKE par2"
+sleep 3
+if [ ! -f $CWD/dl/par2cmdline-0.4.tar.gz ]; then
+    wget -O $CWD/dl/par2cmdline-0.4.tar.gz http://sourceforge.net/projects/parchive/files/par2cmdline/0.4/par2cmdline-0.4.tar.gz
+fi
+tar zxf $CWD/dl/par2cmdline-0.4.tar.gz 
+cd par2cmdline-0.4/
+echo ">>>   Patching par2"
+wget --no-check-certificate -O reedsolomon.cpp.patch https://102391.bugs.gentoo.org/attachment.cgi?id=65851
+patch reedsolomon.cpp reedsolomon.cpp.patch
+CFLAGS="$CFLAGS -O3" ./configure --host=$CHOST --prefix=$DEST
+make clean && make && make install
+$STRIP $DEST/bin/*
+touch $CWD/code/.par2cmdline
+fi
